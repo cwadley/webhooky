@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"crypto/tls"
 	"fmt"
 	"net/http"
 	"os"
@@ -23,28 +24,53 @@ func main() {
 		os.Exit(1)
 	}
 
-	http.HandleFunc(endpoint, func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println("Method:", r.Method)
-		fmt.Println("URL:", r.URL)
-		fmt.Println("Headers:")
-		fmt.Println(r.Header)
-		fmt.Println("Body:")
-		theBody := new(bytes.Buffer)
-		theBody.ReadFrom(r.Body)
-		fmt.Println(theBody.String())
-		fmt.Fprintf(w, "OK")
-	})
-
 	if sslKey == "" {
-		err = http.ListenAndServe(":"+port, nil)
+		http.HandleFunc(endpoint, vomiter)
+		err = http.ListenAndServe(":" + port, nil)
 	} else {
-		err = http.ListenAndServeTLS(":"+port, sslCert, sslKey, nil)
+		mux := http.NewServeMux()
+		mux.HandleFunc("/", vomiter)
+
+		cfg := &tls.Config{
+		    MinVersion:               tls.VersionTLS12,
+		    CurvePreferences:         []tls.CurveID{tls.CurveP521, tls.CurveP384, tls.CurveP256},
+		    PreferServerCipherSuites: true,
+		    CipherSuites: []uint16{
+		        tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+		        tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+		        tls.TLS_RSA_WITH_AES_256_GCM_SHA384,
+		        tls.TLS_RSA_WITH_AES_256_CBC_SHA,
+		    },
+		}
+
+		srv := &http.Server{
+		    Addr:         ":" + port,
+		    Handler:      mux,
+		    TLSConfig:    cfg,
+		    TLSNextProto: make(map[string]func(*http.Server, *tls.Conn, http.Handler), 0),
+		}
+
+		err = srv.ListenAndServeTLS(sslCert, sslKey)
 	}
 
 	if err != nil {
 		fmt.Println(err)
 	}
 
+}
+
+func vomiter(w http.ResponseWriter, r *http.Request) {
+	w.Header().Add("Strict-Transport-Security", "max-age=63072000; includeSubDomains")
+
+	fmt.Println("Method:", r.Method)
+	fmt.Println("URL:", r.URL)
+	fmt.Println("Headers:")
+	fmt.Println(r.Header)
+	fmt.Println("Body:")
+	theBody := new(bytes.Buffer)
+	theBody.ReadFrom(r.Body)
+	fmt.Println(theBody.String())
+	fmt.Fprintf(w, "OK")
 }
 
 func parseArgs(rawArgs []string) (string, string, string, string, error) {
