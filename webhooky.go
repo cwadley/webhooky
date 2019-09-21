@@ -15,11 +15,12 @@ Usage: go run webhooky.go
 	--sslCert	<path to SSL cert> (optional)
 	--sslKey 	<path to SSL key> (optional)
 `
+
 type WebhookyConfig struct {
-        port        string
-        endpoint    string
-        cert        string
-        key         string
+	port     string
+	endpoint string
+	cert     string
+	key      string
 }
 
 func main() {
@@ -30,30 +31,31 @@ func main() {
 		os.Exit(1)
 	}
 
+	fmt.Printf("Webhooky starting on endpoint %s, port %s\n", config.endpoint, config.port)
 	if config.key == "" {
 		http.HandleFunc(config.endpoint, vomiter)
-		err = http.ListenAndServe(":" + config.port, nil)
+		err = http.ListenAndServe(":"+config.port, nil)
 	} else {
 		mux := http.NewServeMux()
 		mux.HandleFunc(config.endpoint, vomiter)
 
 		cfg := &tls.Config{
-		    MinVersion:               tls.VersionTLS12,
-		    CurvePreferences:         []tls.CurveID{tls.CurveP521, tls.CurveP384, tls.CurveP256},
-		    PreferServerCipherSuites: true,
-		    CipherSuites: []uint16{
-		        tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
-		        tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
-		        tls.TLS_RSA_WITH_AES_256_GCM_SHA384,
-		        tls.TLS_RSA_WITH_AES_256_CBC_SHA,
-		    },
+			MinVersion:               tls.VersionTLS12,
+			CurvePreferences:         []tls.CurveID{tls.CurveP521, tls.CurveP384, tls.CurveP256},
+			PreferServerCipherSuites: true,
+			CipherSuites: []uint16{
+				tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+				tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+				tls.TLS_RSA_WITH_AES_256_GCM_SHA384,
+				tls.TLS_RSA_WITH_AES_256_CBC_SHA,
+			},
 		}
 
 		srv := &http.Server{
-		    Addr:         ":" + config.port,
-		    Handler:      mux,
-		    TLSConfig:    cfg,
-		    TLSNextProto: make(map[string]func(*http.Server, *tls.Conn, http.Handler), 0),
+			Addr:         ":" + config.port,
+			Handler:      mux,
+			TLSConfig:    cfg,
+			TLSNextProto: make(map[string]func(*http.Server, *tls.Conn, http.Handler), 0),
 		}
 
 		err = srv.ListenAndServeTLS(config.cert, config.key)
@@ -62,7 +64,6 @@ func main() {
 	if err != nil {
 		fmt.Println(err)
 	}
-
 }
 
 func vomiter(w http.ResponseWriter, r *http.Request) {
@@ -80,7 +81,7 @@ func vomiter(w http.ResponseWriter, r *http.Request) {
 }
 
 func parseArgs(rawArgs []string) (WebhookyConfig, error) {
-        config := WebhookyConfig{endpoint: "/"}
+	config := WebhookyConfig{endpoint: "/"}
 
 	for i := 0; i < len(rawArgs)-1; i++ {
 		switch arg := rawArgs[i]; arg {
