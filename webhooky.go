@@ -15,21 +15,27 @@ Usage: go run webhooky.go
 	--sslCert	<path to SSL cert> (optional)
 	--sslKey 	<path to SSL key> (optional)
 `
+type WebhookyConfig struct {
+        port        string
+        endpoint    string
+        cert        string
+        key         string
+}
 
 func main() {
-	port, endpoint, sslCert, sslKey, err := parseArgs(os.Args[1:])
+	config, err := parseArgs(os.Args[1:])
 	if err != nil {
 		fmt.Printf("Error parsing args: %s", err)
 		fmt.Println(usage)
 		os.Exit(1)
 	}
 
-	if sslKey == "" {
-		http.HandleFunc(endpoint, vomiter)
-		err = http.ListenAndServe(":" + port, nil)
+	if config.key == "" {
+		http.HandleFunc(config.endpoint, vomiter)
+		err = http.ListenAndServe(":" + config.port, nil)
 	} else {
 		mux := http.NewServeMux()
-		mux.HandleFunc("/", vomiter)
+		mux.HandleFunc(config.endpoint, vomiter)
 
 		cfg := &tls.Config{
 		    MinVersion:               tls.VersionTLS12,
@@ -44,13 +50,13 @@ func main() {
 		}
 
 		srv := &http.Server{
-		    Addr:         ":" + port,
+		    Addr:         ":" + config.port,
 		    Handler:      mux,
 		    TLSConfig:    cfg,
 		    TLSNextProto: make(map[string]func(*http.Server, *tls.Conn, http.Handler), 0),
 		}
 
-		err = srv.ListenAndServeTLS(sslCert, sslKey)
+		err = srv.ListenAndServeTLS(config.cert, config.key)
 	}
 
 	if err != nil {
@@ -70,45 +76,40 @@ func vomiter(w http.ResponseWriter, r *http.Request) {
 	theBody := new(bytes.Buffer)
 	theBody.ReadFrom(r.Body)
 	fmt.Println(theBody.String())
-	fmt.Fprintf(w, "OK")
+	fmt.Fprintf(w, "OK - Webhooky")
 }
 
-func parseArgs(rawArgs []string) (string, string, string, string, error) {
-	var (
-		prt  = ""
-		endp = "/"
-		cert = ""
-		key  = ""
-	)
+func parseArgs(rawArgs []string) (WebhookyConfig, error) {
+        config := WebhookyConfig{endpoint: "/"}
 
 	for i := 0; i < len(rawArgs)-1; i++ {
 		switch arg := rawArgs[i]; arg {
 		case "--port":
-			prt = rawArgs[i+1]
+			config.port = rawArgs[i+1]
 			i++
 		case "--endpoint":
-			endp = rawArgs[i+1]
+			config.endpoint = rawArgs[i+1]
 			i++
 		case "--sslCert":
-			cert = rawArgs[i+1]
+			config.cert = rawArgs[i+1]
 			i++
 		case "--sslKey":
-			key = rawArgs[i+1]
+			config.key = rawArgs[i+1]
 			i++
 		default:
 			fmt.Printf("Unrecognized switch: %s", arg)
 		}
 	}
 
-	if prt == "" {
-		return "", "", "", "", fmt.Errorf("The --port switch is required. Supply a valid port.")
+	if config.port == "" {
+		return WebhookyConfig{}, fmt.Errorf("The --port switch is required. Supply a valid port.")
 	}
-	if key != "" && cert == "" {
-		return "", "", "", "", fmt.Errorf("--sslKey specified, but --sslCert not specified. Supply a valid certificate path.")
+	if config.key != "" && config.cert == "" {
+		return WebhookyConfig{}, fmt.Errorf("--sslKey specified, but --sslCert not specified. Supply a valid certificate path.")
 	}
-	if key == "" && cert != "" {
-		return "", "", "", "", fmt.Errorf("--sslCert specified, but --sslKey not specified. Supply a valid key path.")
+	if config.key == "" && config.cert != "" {
+		return WebhookyConfig{}, fmt.Errorf("--sslCert specified, but --sslKey not specified. Supply a valid key path.")
 	}
 
-	return prt, endp, cert, key, nil
+	return config, nil
 }
