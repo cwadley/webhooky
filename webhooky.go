@@ -16,7 +16,7 @@ Usage: go run webhooky.go
 	--sslKey 	<path to SSL key> (optional)
 `
 
-type WebhookyConfig struct {
+type webhookyConfig struct {
 	port     string
 	endpoint string
 	cert     string
@@ -69,10 +69,13 @@ func main() {
 func vomiter(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Strict-Transport-Security", "max-age=63072000; includeSubDomains")
 
+	fmt.Println("RemoteAddr:", r.RemoteAddr)
+	fmt.Println("Host:", r.Host)
 	fmt.Println("Method:", r.Method)
 	fmt.Println("URL:", r.URL)
+	fmt.Println("RequestURI:", r.RequestURI)
 	fmt.Println("Headers:")
-	fmt.Println(r.Header)
+	fmt.Println("  ", r.Header)
 	fmt.Println("Body:")
 	theBody := new(bytes.Buffer)
 	theBody.ReadFrom(r.Body)
@@ -80,8 +83,8 @@ func vomiter(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "OK - Webhooky")
 }
 
-func parseArgs(rawArgs []string) (WebhookyConfig, error) {
-	config := WebhookyConfig{endpoint: "/"}
+func parseArgs(rawArgs []string) (webhookyConfig, error) {
+	config := webhookyConfig{endpoint: "/"}
 
 	for i := 0; i < len(rawArgs)-1; i++ {
 		switch arg := rawArgs[i]; arg {
@@ -103,13 +106,13 @@ func parseArgs(rawArgs []string) (WebhookyConfig, error) {
 	}
 
 	if config.port == "" {
-		return WebhookyConfig{}, fmt.Errorf("The --port switch is required. Supply a valid port.")
+		return webhookyConfig{}, fmt.Errorf("the --port switch is required. Supply a valid port")
 	}
 	if config.key != "" && config.cert == "" {
-		return WebhookyConfig{}, fmt.Errorf("--sslKey specified, but --sslCert not specified. Supply a valid certificate path.")
+		return webhookyConfig{}, fmt.Errorf("--sslKey specified, but --sslCert not specified. Supply a valid certificate path")
 	}
 	if config.key == "" && config.cert != "" {
-		return WebhookyConfig{}, fmt.Errorf("--sslCert specified, but --sslKey not specified. Supply a valid key path.")
+		return webhookyConfig{}, fmt.Errorf("--sslCert specified, but --sslKey not specified. Supply a valid key path")
 	}
 
 	return config, nil
