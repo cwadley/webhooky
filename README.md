@@ -13,11 +13,12 @@ Command line options:
 ```
 --port 		<port to listen on> (required)
 --endpoint 	<endpoint to listen to> (optional, / is default)
---sslCert	<path to SSL cert> (optional)
---sslKey 	<path to SSL key> (optional)
+--cert	<path to SSL cert> (optional)
+--key 	<path to SSL key> (optional)
+--body <string containing a custom response body to be returned> (optional)
 ```
 ### Docker container
-`docker run -it cwadley/webhooky:latest --port <port_num> [--endpoint, --sslCert, --sslKey]`
+`docker run -it cwadley/webhooky:latest --port <port_num> [--endpoint, --cert, --key, --body]`
 
 If SSL certificates are to be used, they must be volume mounted into the container:
-`docker run -it -v $(pwd)/certs:/certs cwadley/webhooky:latest --port 443 --sslCert /certs/mycert.pem --sslKey /certs/mykey.pem`
+`docker run -it -v $(pwd)/certs:/certs cwadley/webhooky:latest --port 443 --cert /certs/mycert.pem --key /certs/mykey.pem`
