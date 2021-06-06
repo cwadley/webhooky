@@ -1,0 +1,28 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webhooky
+  namespace: webhooky
+  labels:
+    app: webhooky
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: webhooky
+  template:
+    metadata:
+      labels:
+        app: webhooky
+    spec:
+      containers:
+        - name: webhooky
+          image: cwadley/webhooky:latest
+          args:
+            - --port
+            - "8080"
+          ports:
+            - containerPort: 8080
+              name: http
+
