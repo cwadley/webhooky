@@ -82,8 +82,8 @@ func (w *webhooky) vomiter(writer http.ResponseWriter, r *http.Request) {
 	fmt.Println("URL:", r.URL)
 	fmt.Println("RequestURI:", r.RequestURI)
 	fmt.Println("Headers:")
-	for _, header := range r.Header {
-		fmt.Println("\t", header)
+	for k, v := range r.Header {
+		fmt.Printf("\t%s: %s\n", k, v)
 	}
 	fmt.Println("Body:")
 	theBody := new(bytes.Buffer)
